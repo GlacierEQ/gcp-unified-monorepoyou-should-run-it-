@@ -1,0 +1,51 @@
+name: Merge GCP Repositories
+
+on:
+  workflow_dispatch:
+
+jobs:
+  merge-repos:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        
+      - name: Configure Git
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          
+      - name: Add and Merge GCP Repositories
+        run: |
+          # Top 15 GCP repos to merge
+          repos=(
+            "https://github.com/GoogleCloudPlatform/cloud-foundation-fabric"
+            "https://github.com/GoogleCloudPlatform/generative-ai"
+            "https://github.com/GoogleCloudPlatform/python-docs-samples"
+            "https://github.com/GoogleCloudPlatform/kubernetes-engine-samples"
+            "https://github.com/GoogleCloudPlatform/microservices-demo"
+            "https://github.com/GoogleCloudPlatform/java-docs-samples"
+            "https://github.com/GoogleCloudPlatform/nodejs-docs-samples"
+            "https://github.com/GoogleCloudPlatform/golang-samples"
+            "https://github.com/GoogleCloudPlatform/cloud-sql-proxy"
+            "https://github.com/GoogleCloudPlatform/terraformer"
+            "https://github.com/GoogleCloudPlatform/buildpacks"
+            "https://github.com/GoogleCloudPlatform/professional-services"
+            "https://github.com/GoogleCloudPlatform/dotnet-docs-samples"
+            "https://github.com/GoogleCloudPlatform/ai-on-gke"
+            "https://github.com/GoogleCloudPlatform/php-docs-samples"
+          )
+          
+          for repo in "${repos[@]}"; do
+            repo_name=$(basename $repo)
+            echo "Processing $repo_name..."
+            git remote add $repo_name $repo
+            git fetch $repo_name --depth=1
+            git merge --allow-unrelated-histories -X theirs $repo_name/main -m "Merge $repo_name" || \
+            git merge --allow-unrelated-histories -X theirs $repo_name/master -m "Merge $repo_name" || \
+            echo "Skipped $repo_name - no main/master branch"
+          done
+          
+      - name: Push Changes
+        run: |
+          git push origin main
