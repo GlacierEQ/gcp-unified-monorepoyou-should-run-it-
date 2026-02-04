@@ -1,0 +1,37 @@
+name: Merge GCP Repositories
+
+on:
+  workflow_dispatch:
+
+jobs:
+  merge-all:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        
+    - name: Setup
+      run: |
+        git config user.name "Actions Bot"
+        git config user.email "bot@github.com"
+        
+    - name: Add remotes & merge
+      run: |
+        git remote add gen-ai https://github.com/GoogleCloudPlatform/generative-ai.git
+        git remote add python https://github.com/GoogleCloudPlatform/python-docs-samples.git
+        git remote add micro https://github.com/GoogleCloudPlatform/microservices-demo.git
+        git remote add terra https://github.com/GoogleCloudPlatform/terraformer.git
+        git remote add kubectl https://github.com/GoogleCloudPlatform/kubectl-ai.git
+        
+        git fetch --all --depth=1
+        
+        for repo in gen-ai python micro terra kubectl; do
+          git merge -s ours --no-commit --allow-unrelated-histories $repo/main || git merge -s ours --no-commit --allow-unrelated-histories $repo/master || true
+          git read-tree --prefix=${repo}/ -u $repo/main || git read-tree --prefix=${repo}/ -u $repo/master
+          git commit -m "Merge: $repo"
+        done
+        
+        git push origin main
